@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific & Graphing Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0d1117;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .mode-switch-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            background: #161b22;
+            color: #8b949e;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .mode-switch-btn:hover { background: #21262d; border-color: #58a6ff; }
+        .mode-switch-btn.active { background: #1f6feb; color: #fff; border-color: #58a6ff; box-shadow: 0 0 20px rgba(31, 111, 235, 0.3); }
+        .panel {
+            background: #161b22;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid #30363d;
+        }
+        .panels-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .display {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            text-align: right;
+            border: 2px solid #30363d;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .history { color: #8b949e; font-size: 14px; min-height: 20px; word-wrap: break-word; font-family: 'SF Mono', Monaco, monospace; }
+        .current { color: #58a6ff; font-size: 36px; font-weight: 400; font-family: 'SF Mono', Monaco, monospace; word-wrap: break-word; letter-spacing: -0.5px; }
+        .mode-indicator { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .mode-btn {
+            background: #21262d; border: 1px solid #30363d; color: #8b949e;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 11px;
+            font-weight: 600; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .mode-btn:hover { background: #30363d; }
+        .mode-btn.active { background: #1f6feb; color: #fff; border-color: #58a6ff; }
+        .section-title { color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; margin: 16px 0 8px 4px; font-weight: 600; }
+        .buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        button {
+            border: none; border-radius: 10px; padding: 16px 8px; font-size: 15px;
+            cursor: pointer; transition: all 0.12s; font-weight: 600; color: #fff;
+            position: relative; outline: none; user-select: none;
+        }
+        button:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        button:active { filter: brightness(0.9); transform: translateY(1px); }
+        .number { background: #30363d; border-bottom: 3px solid #21262d; }
+        .number:hover { background: #3d444d; }
+        .operator { background: #f85149; border-bottom: 3px solid #da3633; }
+        .operator:hover { background: #ff6b6b; }
+        .function { background: #1f6feb; border-bottom: 3px solid #1158c7; font-size: 13px; }
+        .function:hover { background: #388bfd; }
+        .calc-fn { background: #8957e5; border-bottom: 3px solid #6e40c9; font-size: 12px; }
+        .calc-fn:hover { background: #a371f7; }
+        .variable { background: #d29922; border-bottom: 3px solid #bb8009; color: #fff; font-size: 14px; }
+        .variable:hover { background: #e3b341; }
+        .constant { background: #3fb950; border-bottom: 3px solid #2ea043; color: #fff; font-size: 14px; }
+        .constant:hover { background: #56d364; }
+        .graph-btn { background: #d29922; border-bottom: 3px solid #bb8009; color: #fff; }
+        .graph-btn:hover { background: #e3b341; }
+        .equals { background: #238636; border-bottom: 3px solid #196c2e; font-weight: 700; font-size: 20px; }
+        .equals:hover { background: #2ea043; }
+        .clear { background: #da3633; border-bottom: 3px solid #b62324; }
+        .clear:hover { background: #f85149; }
+        .delete { background: #d29922; border-bottom: 3px solid #bb8009; }
+        .delete:hover { background: #e3b341; }
+        .zero { grid-column: span 2; }
+        .memory { background: #6e7681; border-bottom: 3px solid #484f58; font-size: 12px; }
+        .memory:hover { background: #8b949e; }
+        .paren { background: #484f58; border-bottom: 3px solid #30363d; }
+        .paren:hover { background: #6e7681; }
+        #graphCanvas { background: #0d1117; border-radius: 12px; width: 100%; height: 340px; margin-bottom: 16px; border: 2px solid #30363d; }
+        .graph-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+        .graph-input {
+            flex: 1; background: #0d1117; border: 2px solid #30363d; border-radius: 8px;
+            padding: 12px; color: #58a6ff; font-size: 15px; font-family: 'SF Mono', Monaco, monospace;
+            outline: none; transition: border-color 0.2s;
+        }
+        .graph-input:focus { border-color: #58a6ff; }
+        .graph-input::placeholder { color: #484f58; }
+        .range-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .range-input {
+            background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+            padding: 8px; color: #c9d1d9; font-size: 12px; text-align: center;
+            font-family: 'SF Mono', Monaco, monospace; outline: none;
+        }
+        .range-input:focus { border-color: #58a6ff; }
+        .tab-container { display: flex; gap: 4px; margin-bottom: 12px; }
+        .tab {
+            background: #21262d; border: 1px solid #30363d; color: #8b949e;
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+            font-weight: 600; transition: all 0.2s;
+        }
+        .tab:hover { background: #30363d; }
+        .tab.active { background: #1f6feb; color: #fff; border-color: #58a6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .function-list { max-height: 140px; overflow-y: auto; }
+        .function-item {
+            display: flex; align-items: center; padding: 8px 10px;
+            background: #21262d; border-radius: 8px; margin-bottom: 6px; border: 1px solid #30363d;
+        }
+        .function-color { width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; flex-shrink: 0; }
+        .function-text { color: #c9d1d9; font-size: 14px; flex-grow: 1; font-family: 'SF Mono', Monaco, monospace; }
+        .remove-function { background: #da3633; border: none; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 700; }
+        .remove-function:hover { background: #f85149; }
+        .stats-panel { background: #0d1117; border-radius: 10px; padding: 16px; border: 1px solid #30363d; }
+        .stats-title { color: #8b949e; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stat-item { display: flex; justify-content: space-between; color: #c9d1d9; font-size: 14px; margin-bottom: 6px; font-family: 'SF Mono', Monaco, monospace; padding: 4px 0; border-bottom: 1px solid #21262d; }
+        .stat-item:last-child { border-bottom: none; }
+        table { width: 100%; color: #c9d1d9; border-collapse: collapse; font-family: 'SF Mono', Monaco, monospace; font-size: 14px; }
+        th { background: #21262d; padding: 10px; text-align: left; color: #58a6ff; font-weight: 600; border-bottom: 2px solid #30363d; }
+        td { padding: 8px 10px; border-bottom: 1px solid #21262d; }
+        tr:hover td { background: #161b22; }
+        .hidden { display: none !important; }
+        @media (max-width: 900px) {
+            .panels-grid { grid-template-columns: 1fr; }
+            .buttons { grid-template-columns: repeat(5, 1fr); }
+            button { padding: 14px 4px; font-size: 14px; }
+            .function, .calc-fn { font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mode-switcher">
+            <button class="mode-switch-btn active" onclick="switchCalculatorMode('scientific')" id="sciModeBtn">Scientific Mode</button>
+            <button class="mode-switch-btn" onclick="switchCalculatorMode('graphing')" id="graphModeBtn">Graphing Mode</button>
+        </div>
+
+        <div id="scientific-panel" class="panel">
+            <div class="mode-indicator">
+                <button class="mode-btn active" onclick="setMode('deg')">DEG</button>
+                <button class="mode-btn" onclick="setMode('rad')">RAD</button>
+                <button class="mode-btn" onclick="setMode('grad')">GRAD</button>
+                <button class="mode-btn" onclick="toggleFix()">FIX</button>
+                <button class="mode-btn" onclick="toggleSci()">SCI</button>
+            </div>
+            <div class="display">
+                <div class="history" id="history"></div>
+                <div class="current" id="current">0</div>
+            </div>
+            <div class="section-title">Memory</div>
+            <div class="buttons">
+                <button class="memory" onclick="memoryClear()">MC</button>
+                <button class="memory" onclick="memoryRecall()">MR</button>
+                <button class="memory" onclick="memoryAdd()">M+</button>
+                <button class="memory" onclick="memorySubtract()">M-</button>
+                <button class="memory" onclick="memoryStore()">MS</button>
+            </div>
+            <div class="section-title">Variables</div>
+            <div class="buttons">
+                <button class="variable" onclick="insertVariable('x')">x</button>
+                <button class="variable" onclick="insertVariable('y')">y</button>
+                <button class="variable" onclick="insertVariable('z')">z</button>
+                <button class="variable" onclick="insertVariable('a')">a</button>
+                <button class="variable" onclick="insertVariable('b')">b</button>
+            </div>
+            <div class="section-title">Trigonometry</div>
+            <div class="buttons">
+                <button class="function" onclick="insertFunction('sin')">sin</button>
+                <button class="function" onclick="insertFunction('cos')">cos</button>
+                <button class="function" onclick="insertFunction('tan')">tan</button>
+                <button class="function" onclick="insertFunction('asin')">asin</button>
+                <button class="function" onclick="insertFunction('acos')">acos</button>
+                <button class="function" onclick="insertFunction('atan')">atan</button>
+                <button class="function" onclick="insertFunction('sinh')">sinh</button>
+                <button class="function" onclick="insertFunction('cosh')">cosh</button>
+                <button class="function" onclick="insertFunction('tanh')">tanh</button>
+                <button class="function" onclick="insertFunction('deg')">deg</button>
+            </div>
+            <div class="section-title">Logarithms & Powers</div>
+            <div class="buttons">
+                <button class="function" onclick="insertFunction('log')">log</button>
+                <button class="function" onclick="insertFunction('ln')">ln</button>
+                <button class="function" onclick="insertFunction('log2')">log2</button>
+                <button class="function" onclick="insertFunction('sqrt')">sqrt</button>
+                <button class="function" onclick="insertFunction('cbrt')">cbrt</button>
+                <button class="function" onclick="insertFunction('square')">x^2</button>
+                <button class="function" onclick="insertFunction('cube')">x^3</button>
+                <button class="function" onclick="insertFunction('pow')">x^y</button>
+                <button class="function" onclick="insertFunction('exp')">e^x</button>
+                <button class="function" onclick="insertFunction('10^x')">10^x</button>
+            </div>
+            <div class="section-title">Calculus</div>
+            <div class="buttons">
+                <button class="calc-fn" onclick="insertFunction('deriv')">d/dx</button>
+                <button class="calc-fn" onclick="insertFunction('integral')">integral</button>
+                <button class="calc-fn" onclick="insertFunction('limit')">lim</button>
+                <button class="calc-fn" onclick="insertFunction('sum')">sum</button>
+                <button class="calc-fn" onclick="insertFunction('prod')">prod</button>
+            </div>
+            <div class="section-title">Constants & Parens</div>
+            <div class="buttons">
+                <button class="constant" onclick="insertConstant('pi')">pi</button>
+                <button class="constant" onclick="insertConstant('e')">e</button>
+                <button class="constant" onclick="insertConstant('phi')">phi</button>
+                <button class="paren" onclick="appendOperator('(')">(</button>
+                <button class="paren" onclick="appendOperator(')')">)</button>
+            </div>
+            <div class="section-title">Numbers & Operations</div>
+            <div class="buttons">
+                <button class="clear" onclick="clearAll()">AC</button>
+                <button class="delete" onclick="deleteLast()">DEL</button>
+                <button class="function" onclick="insertFunction('abs')">abs</button>
+                <button class="function" onclick="insertFunction('fact')">n!</button>
+                <button class="operator" onclick="appendOperator('/')">/</button>
+                <button class="number" onclick="appendNumber('7')">7</button>
+                <button class="number" onclick="appendNumber('8')">8</button>
+                <button class="number" onclick="appendNumber('9')">9</button>
+                <button class="function" onclick="insertFunction('neg')">+/-</button>
+                <button class="operator" onclick="appendOperator('*')">*</button>
+                <button class="number" onclick="appendNumber('4')">4</button>
+                <button class="number" onclick="appendNumber('5')">5</button>
+                <button class="number" onclick="appendNumber('6')">6</button>
+                <button class="function" onclick="insertFunction('1/x')">1/x</button>
+                <button class="operator" onclick="appendOperator('-')">-</button>
+                <button class="number" onclick="appendNumber('1')">1</button>
+                <button class="number" onclick="appendNumber('2')">2</button>
+                <button class="number" onclick="appendNumber('3')">3</button>
+                <button class="graph-btn" onclick="sendToGraph()">TO GRAPH</button>
+                <button class="operator" onclick="appendOperator('+')">+</button>
+                <button class="number zero" onclick="appendNumber('0')">0</button>
+                <button class="number" onclick="appendNumber('.')">.</button>
+                <button class="equals" onclick="calculate()">=</button>
+            </div>
+        </div>
+
+        <div id="graphing-panel" class="hidden">
+            <div class="panels-grid">
+                <div class="panel">
+                    <div class="display">
+                        <div class="history" id="graphHistory"></div>
+                        <div class="current" id="graphCurrent">0</div>
+                    </div>
+                    <div class="section-title">Variables</div>
+                    <div class="buttons">
+                        <button class="variable" onclick="insertGraphVariable('x')">x</button>
+                        <button class="variable" onclick="insertGraphVariable('y')">y</button>
+                        <button class="variable" onclick="insertGraphVariable('z')">z</button>
+                        <button class="variable" onclick="insertGraphVariable('t')">t</button>
+                        <button class="variable" onclick="insertGraphVariable('theta')">theta</button>
+                    </div>
+                    <div class="section-title">Functions</div>
+                    <div class="buttons">
+                        <button class="function" onclick="insertGraphFunction('sin')">sin</button>
+                        <button class="function" onclick="insertGraphFunction('cos')">cos</button>
+                        <button class="function" onclick="insertGraphFunction('tan')">tan</button>
+                        <button class="function" onclick="insertGraphFunction('sqrt')">sqrt</button>
+                        <button class="function" onclick="insertGraphFunction('log')">log</button>
+                        <button class="function" onclick="insertGraphFunction('ln')">ln</button>
+                        <button class="function" onclick="insertGraphFunction('exp')">exp</button>
+                        <button class="function" onclick="insertGraphFunction('abs')">abs</button>
+                        <button class="function" onclick="insertGraphFunction('pow')">x^y</button>
+                        <button class="function" onclick="insertGraphFunction('square')">x^2</button>
+                    </div>
+                    <div class="section-title">Constants</div>
+                    <div class="buttons">
+                        <button class="constant" onclick="insertGraphConstant('pi')">pi</button>
+                        <button class="constant" onclick="insertGraphConstant('e')">e</button>
+                        <button class="paren" onclick="insertGraphOperator('(')">(</button>
+                        <button class="paren" onclick="insertGraphOperator(')')">)</button>
+                        <button class="clear" onclick="clearGraphInput()">CLR</button>
+                    </div>
+                    <div class="section-title">Numbers</div>
+                    <div class="buttons">
+                        <button class="number" onclick="insertGraphNumber('7')">7</button>
+                        <button class="number" onclick="insertGraphNumber('8')">8</button>
+                        <button class="number" onclick="insertGraphNumber('9')">9</button>
+                        <button class="operator" onclick="insertGraphOperator('/')">/</button>
+                        <button class="operator" onclick="insertGraphOperator('*')">*</button>
+                        <button class="number" onclick="insertGraphNumber('4')">4</button>
+                        <button class="number" onclick="insertGraphNumber('5')">5</button>
+                        <button class="number" onclick="insertGraphNumber('6')">6</button>
+                        <button class="operator" onclick="insertGraphOperator('-')">-</button>
+                        <button class="operator" onclick="insertGraphOperator('+')">+</button>
+                        <button class="number" onclick="insertGraphNumber('1')">1</button>
+                        <button class="number" onclick="insertGraphNumber('2')">2</button>
+                        <button class="number" onclick="insertGraphNumber('3')">3</button>
+                        <button class="graph-btn" onclick="plotEquation()">PLOT</button>
+                        <button class="delete" onclick="deleteGraphLast()">DEL</button>
+                        <button class="number zero" onclick="insertGraphNumber('0')">0</button>
+                        <button class="number" onclick="insertGraphNumber('.')">.</button>
+                        <button class="number" onclick="insertGraphOperator('^')">^</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="tab-container">
+                        <button class="tab active" onclick="switchGraphTab('graph')">Graph</button>
+                        <button class="tab" onclick="switchGraphTab('table')">Table</button>
+                        <button class="tab" onclick="switchGraphTab('stats')">Stats</button>
+                    </div>
+                    <div id="graph-tab" class="tab-content active">
+                        <canvas id="graphCanvas"></canvas>
+                        <div class="graph-controls">
+                            <input type="text" class="graph-input" id="functionInput" placeholder="Type equation: sin(x), x^2, e^x..." onkeypress="if(event.key==='Enter')addFunction()">
+                            <button class="graph-btn" onclick="addFunction()">ADD</button>
+                            <button class="clear" onclick="clearGraph()">CLR ALL</button>
+                        </div>
+                        <div class="range-controls">
+                            <input type="number" class="range-input" id="xMin" placeholder="Xmin" value="-10" onchange="drawGraph()">
+                            <input type="number" class="range-input" id="xMax" placeholder="Xmax" value="10" onchange="drawGraph()">
+                            <input type="number" class="range-input" id="yMin" placeholder="Ymin" value="-10" onchange="drawGraph()">
+                            <input type="number" class="range-input" id="yMax" placeholder="Ymax" value="10" onchange="drawGraph()">
+                        </div>
+                        <div class="function-list" id="functionList"></div>
+                    </div>
+                    <div id="table-tab" class="tab-content">
+                        <div style="max-height: 500px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>x</th><th>f(x)</th></tr></thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="stats-tab" class="tab-content">
+                        <div class="stats-panel">
+                            <div class="stats-title">Function Analysis</div>
+                            <div id="statsContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==================== MODE SWITCHING ====================
+let currentMode = 'scientific';
+
+function switchCalculatorMode(mode) {
+    currentMode = mode;
+    document.getElementById('sciModeBtn').classList.toggle('active', mode === 'scientific');
+    document.getElementById('graphModeBtn').classList.toggle('active', mode === 'graphing');
+    if (mode === 'scientific') {
+        document.getElementById('scientific-panel').classList.remove('hidden');
+        document.getElementById('graphing-panel').classList.add('hidden');
+    } else {
+        document.getElementById('scientific-panel').classList.add('hidden');
+        document.getElementById('graphing-panel').classList.remove('hidden');
+        setTimeout(resizeCanvas, 50);
+    }
+}
+
+// ==================== SCIENTIFIC CALCULATOR ====================
+let current = '0', history = '', memory = 0;
+let isRadians = false, isFixed = false, isScientific = false;
+let fixedDecimals = 4, lastWasOperator = false, angleMode = 'deg', justCalculated = false;
+
+function updateDisplay() {
+    document.getElementById('current').textContent = current;
+    document.getElementById('history').textContent = history;
+}
+
+function setMode(mode) {
+    angleMode = mode; isRadians = mode === 'rad';
+    document.querySelectorAll('#scientific-panel .mode-btn').forEach(btn => {
+        btn.classList.toggle('active',
+            (mode === 'deg' && btn.textContent === 'DEG') ||
+            (mode === 'rad' && btn.textContent === 'RAD') ||
+            (mode === 'grad' && btn.textContent === 'GRAD'));
+    });
+}
+
+function toggleFix() {
+    isFixed = !isFixed;
+    document.querySelectorAll('#scientific-panel .mode-btn').forEach(btn => {
+        if (btn.textContent === 'FIX') btn.classList.toggle('active', isFixed);
+    });
+}
+
+function toggleSci() {
+    isScientific = !isScientific;
+    document.querySelectorAll('#scientific-panel .mode-btn').forEach(btn => {
+        if (btn.textContent === 'SCI') btn.classList.toggle('active', isScientific);
+    });
+}
+
+function appendNumber(num) {
+    if (justCalculated) { current = num === '.' ? '0.' : num; justCalculated = false; }
+    else if (current === '0' && num !== '.') current = num;
+    else if (num === '.' && current.split(/[+\-*/()^]/).pop().includes('.')) return;
+    else current += num;
+    lastWasOperator = false; updateDisplay();
+}
+
+function appendOperator(op) {
+    if (justCalculated) justCalculated = false;
+    if (lastWasOperator && op !== '(' && op !== ')') current = current.slice(0, -1) + op;
+    else current += op;
+    lastWasOperator = (op !== '(' && op !== ')'); updateDisplay();
+}
+
+function insertVariable(v) {
+    if (justCalculated) { current = v; justCalculated = false; }
+    else if (current === '0') current = v;
+    else current += v;
+    lastWasOperator = false; updateDisplay();
+}
+
+function insertConstant(constant) {
+    if (justCalculated) { current = '0'; justCalculated = false; }
+    const val = constant === 'pi' ? 'pi' : constant === 'e' ? 'e' : '1.618033988749895';
+    if (current === '0') current = val; else current += val;
+    lastWasOperator = false; updateDisplay();
+}
+
+function toRadians(angle) {
+    if (angleMode === 'deg') return angle * Math.PI / 180;
+    if (angleMode === 'grad') return angle * Math.PI / 200;
+    return angle;
+}
+
+function fromRadians(angle) {
+    if (angleMode === 'deg') return angle * 180 / Math.PI;
+    if (angleMode === 'grad') return angle * 200 / Math.PI;
+    return angle;
+}
+
+function insertFunction(func) {
+    const value = parseFloat(current) || 0;
+    let result;
+    switch(func) {
+        case 'sin': result = Math.sin(toRadians(value)); history = 'sin(' + current + ')'; break;
+        case 'cos': result = Math.cos(toRadians(value)); history = 'cos(' + current + ')'; break;
+        case 'tan': result = Math.tan(toRadians(value)); history = 'tan(' + current + ')'; break;
+        case 'asin': result = fromRadians(Math.asin(value)); history = 'asin(' + current + ')'; break;
+        case 'acos': result = fromRadians(Math.acos(value)); history = 'acos(' + current + ')'; break;
+        case 'atan': result = fromRadians(Math.atan(value)); history = 'atan(' + current + ')'; break;
+        case 'sinh': result = Math.sinh(value); history = 'sinh(' + current + ')'; break;
+        case 'cosh': result = Math.cosh(value); history = 'cosh(' + current + ')'; break;
+        case 'tanh': result = Math.tanh(value); history = 'tanh(' + current + ')'; break;
+        case 'log': result = Math.log10(value); history = 'log(' + current + ')'; break;
+        case 'ln': result = Math.log(value); history = 'ln(' + current + ')'; break;
+        case 'log2': result = Math.log2(value); history = 'log2(' + current + ')'; break;
+        case 'sqrt': result = Math.sqrt(value); history = 'sqrt(' + current + ')'; break;
+        case 'cbrt': result = Math.cbrt(value); history = 'cbrt(' + current + ')'; break;
+        case 'square': result = Math.pow(value, 2); history = '(' + current + ')^2'; break;
+        case 'cube': result = Math.pow(value, 3); history = '(' + current + ')^3'; break;
+        case 'exp': result = Math.exp(value); history = 'e^(' + current + ')'; break;
+        case '10^x': result = Math.pow(10, value); history = '10^(' + current + ')'; break;
+        case 'pow': current += '^'; lastWasOperator = true; justCalculated = false; updateDisplay(); return;
+        case 'abs': result = Math.abs(value); history = 'abs(' + current + ')'; break;
+        case 'fact': result = factorial(Math.floor(value)); history = '(' + current + ')!'; break;
+        case '1/x': result = 1 / value; history = '1/(' + current + ')'; break;
+        case 'neg': result = -value; history = '-(' + current + ')'; break;
+        case 'deg': result = value; history = current + ' deg'; break;
+        case 'deriv': {
+            const h = 0.0001;
+            const f = (x) => evaluateExpression(current.replace(/\bx\b/g, x));
+            result = (f(value + h) - f(value - h)) / (2 * h);
+            history = 'd/dx(' + current + ')|x=' + value; break;
+        }
+        case 'integral': {
+            const n = 1000;
+            const f = (x) => evaluateExpression(current.replace(/\bx\b/g, x));
+            const a = 0, b = value, step = (b - a) / n;
+            let sum = f(a) + f(b);
+            for (let i = 1; i < n; i += 2) sum += 4 * f(a + i * step);
+            for (let i = 2; i < n; i += 2) sum += 2 * f(a + i * step);
+            result = sum * step / 3;
+            history = 'integral(' + current + ') from 0 to ' + value; break;
+        }
+        case 'limit': result = value; history = 'lim(' + current + ')'; break;
+        case 'sum': {
+            const n = Math.floor(Math.abs(value)) || 10;
+            let sum = 0;
+            for (let i = 1; i <= n; i++) sum += evaluateExpression(current.replace(/\bx\b/g, i));
+            result = sum; history = 'sum(' + current + ', n=1 to ' + n + ')'; break;
+        }
+        case 'prod': {
+            const n = Math.floor(Math.abs(value)) || 10;
+            let prod = 1;
+            for (let i = 1; i <= n; i++) prod *= evaluateExpression(current.replace(/\bx\b/g, i));
+            result = prod; history = 'prod(' + current + ', n=1 to ' + n + ')'; break;
+        }
+    }
+    current = formatResult(result); justCalculated = true; updateDisplay();
+}
+
+function evaluateExpression(expr) {
+    try {
+        expr = expr
+            .replace(/sin\(/g, 'Math.sin(')
+            .replace(/cos\(/g, 'Math.cos(')
+            .replace(/tan\(/g, 'Math.tan(')
+            .replace(/asin\(/g, 'Math.asin(')
+            .replace(/acos\(/g, 'Math.acos(')
+            .replace(/atan\(/g, 'Math.atan(')
+            .replace(/sinh\(/g, 'Math.sinh(')
+            .replace(/cosh\(/g, 'Math.cosh(')
+            .replace(/tanh\(/g, 'Math.tanh(')
+            .replace(/log10\(/g, 'Math.log10(')
+            .replace(/log2\(/g, 'Math.log2(')
+            .replace(/log\(/g, 'Math.log10(')
+            .replace(/ln\(/g, 'Math.log(')
+            .replace(/exp\(/g, 'Math.exp(')
+            .replace(/sqrt\(/g, 'Math.sqrt(')
+            .replace(/cbrt\(/g, 'Math.cbrt(')
+            .replace(/abs\(/g, 'Math.abs(')
+            .replace(/pi/g, '(' + Math.PI + ')')
+            .replace(/\be\b/g, '(' + Math.E + ')')
+            .replace(/\^/g, '**');
+        return eval(expr);
+    } catch (e) { return NaN; }
+}
+
+function factorial(n) {
+    if (n < 0) return NaN;
+    if (n === 0 || n === 1) return 1;
+    if (n > 170) return Infinity;
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+function formatResult(num) {
+    if (isNaN(num)) return 'Error';
+    if (!isFinite(num)) return num > 0 ? 'inf' : '-inf';
+    if (Number.isInteger(num)) return num.toString();
+    if (isFixed) return num.toFixed(fixedDecimals);
+    if (isScientific) return num.toExponential(6);
+    let str = parseFloat(num.toPrecision(12)).toString();
+    if (str.length > 15) return num.toExponential(8);
+    return str;
+}
+
+function calculate() {
+    try {
+        let expression = current
+            .replace(/sin\(/g, 'Math.sin(')
+            .replace(/cos\(/g, 'Math.cos(')
+            .replace(/tan\(/g, 'Math.tan(')
+            .replace(/asin\(/g, 'Math.asin(')
+            .replace(/acos\(/g, 'Math.acos(')
+            .replace(/atan\(/g, 'Math.atan(')
+            .replace(/sinh\(/g, 'Math.sinh(')
+            .replace(/cosh\(/g, 'Math.cosh(')
+            .replace(/tanh\(/g, 'Math.tanh(')
+            .replace(/log10\(/g, 'Math.log10(')
+            .replace(/log2\(/g, 'Math.log2(')
+            .replace(/log\(/g, 'Math.log10(')
+            .replace(/ln\(/g, 'Math.log(')
+            .replace(/exp\(/g, 'Math.exp(')
+            .replace(/sqrt\(/g, 'Math.sqrt(')
+            .replace(/cbrt\(/g, 'Math.cbrt(')
+            .replace(/abs\(/g, 'Math.abs(')
+            .replace(/pi/g, '(' + Math.PI + ')')
+            .replace(/\be\b/g, '(' + Math.E + ')')
+            .replace(/\^/g, '**');
+        history = current + ' =';
+        const result = eval(expression);
+        current = formatResult(result); justCalculated = true; updateDisplay();
+    } catch (e) { current = 'Error'; updateDisplay(); }
+}
+
+function clearAll() { current = '0'; history = ''; lastWasOperator = false; justCalculated = false; updateDisplay(); }
+
+function deleteLast() {
+    if (justCalculated) { clearAll(); return; }
+    if (current.length > 1) current = current.slice(0, -1); else current = '0';
+    updateDisplay();
+}
+
+function memoryClear() { memory = 0; }
+function memoryRecall() { current = memory.toString(); justCalculated = true; updateDisplay(); }
+function memoryAdd() { memory += parseFloat(current) || 0; }
+function memorySubtract() { memory -= parseFloat(current) || 0; }
+function memoryStore() { memory = parseFloat(current) || 0; }
+
+function sendToGraph() {
+    if (current !== '0' && current !== 'Error') {
+        switchCalculatorMode('graphing');
+        document.getElementById('functionInput').value = current;
+        addFunction();
+    }
+}
+
+// ==================== GRAPHING CALCULATOR ====================
+let graphCurrent = '0', graphHistory = '';
+let graphJustCalculated = false, graphLastWasOperator = false;
+
+function updateGraphDisplay() {
+    document.getElementById('graphCurrent').textContent = graphCurrent;
+    document.getElementById('graphHistory').textContent = graphHistory;
+}
+
+function insertGraphNumber(num) {
+    if (graphJustCalculated) { graphCurrent = num === '.' ? '0.' : num; graphJustCalculated = false; }
+    else if (graphCurrent === '0' && num !== '.') graphCurrent = num;
+    else if (num === '.' && graphCurrent.split(/[+\-*/()^]/).pop().includes('.')) return;
+    else graphCurrent += num;
+    graphLastWasOperator = false; updateGraphDisplay();
+}
+
+function insertGraphOperator(op) {
+    if (graphJustCalculated) graphJustCalculated = false;
+    if (graphLastWasOperator && op !== '(' && op !== ')') graphCurrent = graphCurrent.slice(0, -1) + op;
+    else graphCurrent += op;
+    graphLastWasOperator = (op !== '(' && op !== ')'); updateGraphDisplay();
+}
+
+function insertGraphVariable(v) {
+    if (graphJustCalculated) { graphCurrent = v; graphJustCalculated = false; }
+    else if (graphCurrent === '0') graphCurrent = v;
+    else graphCurrent += v;
+    graphLastWasOperator = false; updateGraphDisplay();
+}
+
+function insertGraphConstant(c) {
+    if (graphJustCalculated) { graphCurrent = '0'; graphJustCalculated = false; }
+    const val = c === 'pi' ? 'pi' : c === 'e' ? 'e' : '1.618033988749895';
+    if (graphCurrent === '0') graphCurrent = val; else graphCurrent += val;
+    graphLastWasOperator = false; updateGraphDisplay();
+}
+
+function insertGraphFunction(func) {
+    if (graphJustCalculated) { graphCurrent = '0'; graphJustCalculated = false; }
+    switch(func) {
+        case 'sin': case 'cos': case 'tan': case 'sqrt': case 'log': case 'ln': case 'exp': case 'abs':
+            if (graphCurrent === '0') graphCurrent = func + '('; else graphCurrent += func + '('; break;
+        case 'pow': graphCurrent += '^'; graphLastWasOperator = true; break;
+        case 'square': graphCurrent += '^2'; break;
+    }
+    updateGraphDisplay();
+}
+
+function clearGraphInput() { graphCurrent = '0'; graphHistory = ''; graphLastWasOperator = false; graphJustCalculated = false; updateGraphDisplay(); }
+
+function deleteGraphLast() {
+    if (graphJustCalculated) { clearGraphInput(); return; }
+    if (graphCurrent.length > 1) graphCurrent = graphCurrent.slice(0, -1); else graphCurrent = '0';
+    updateGraphDisplay();
+}
+
+function plotEquation() {
+    if (graphCurrent !== '0' && graphCurrent !== 'Error') {
+        document.getElementById('functionInput').value = graphCurrent;
+        addFunction();
+        graphHistory = 'Plotted: ' + graphCurrent;
+        graphJustCalculated = true; updateGraphDisplay();
+    }
+}
+
+// ==================== GRAPH ENGINE ====================
+let functions = [];
+let colors = ['#f85149', '#1f6feb', '#3fb950', '#d29922', '#a371f7', '#58a6ff', '#56d364', '#e3b341'];
+let currentColorIndex = 0;
+
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    drawGraph();
+}
+
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 100);
+
+function switchGraphTab(tab) {
+    document.querySelectorAll('#graphing-panel .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#graphing-panel .tab-content').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tab + '-tab').classList.add('active');
+    if (tab === 'table') updateTable();
+    if (tab === 'stats') updateStats();
+}
+
+function addFunction() {
+    const input = document.getElementById('functionInput');
+    let funcStr = input.value.trim();
+    if (!funcStr) return;
+    funcStr = funcStr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/\s+/g, '');
+    const color = colors[currentColorIndex % colors.length];
+    currentColorIndex++;
+    functions.push({ expression: funcStr, color: color, id: Date.now() });
+    input.value = '';
+    updateFunctionList();
+    drawGraph();
+}
+
+function removeFunction(id) {
+    functions = functions.filter(f => f.id !== id);
+    updateFunctionList();
+    drawGraph();
+}
+
+function clearGraph() {
+    functions = []; currentColorIndex = 0;
+    updateFunctionList(); drawGraph();
+}
+
+function updateFunctionList() {
+    const list = document.getElementById('functionList');
+    list.innerHTML = functions.map(f =>
+        '<div class="function-item">' +
+        '<div class="function-color" style="background: ' + f.color + '"></div>' +
+        '<span class="function-text">' + f.expression + '</span>' +
+        '<button class="remove-function" onclick="removeFunction(' + f.id + ')">x</button>' +
+        '</div>'
+    ).join('');
+}
+
+function evaluateFunction(funcStr, x) {
+    try {
+        // Replace math functions with Math. equivalents FIRST (before variable replacement)
+        let expression = funcStr
+            .replace(/sin\(/g, 'Math.sin(')
+            .replace(/cos\(/g, 'Math.cos(')
+            .replace(/tan\(/g, 'Math.tan(')
+            .replace(/asin\(/g, 'Math.asin(')
+            .replace(/acos\(/g, 'Math.acos(')
+            .replace(/atan\(/g, 'Math.atan(')
+            .replace(/sinh\(/g, 'Math.sinh(')
+            .replace(/cosh\(/g, 'Math.cosh(')
+            .replace(/tanh\(/g, 'Math.tanh(')
+            .replace(/log10\(/g, 'Math.log10(')
+            .replace(/log2\(/g, 'Math.log2(')
+            .replace(/log\(/g, 'Math.log10(')
+            .replace(/ln\(/g, 'Math.log(')
+            .replace(/exp\(/g, 'Math.exp(')
+            .replace(/sqrt\(/g, 'Math.sqrt(')
+            .replace(/cbrt\(/g, 'Math.cbrt(')
+            .replace(/abs\(/g, 'Math.abs(')
+            .replace(/pi/g, '(' + Math.PI + ')')
+            .replace(/\be\b/g, '(' + Math.E + ')')
+            .replace(/\^/g, '**')
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/');
+        
+        // Now replace the variable x with the actual value
+        // Use a regex that matches 'x' as a whole word, not part of another word
+        expression = expression.replace(/\bx\b/g, '(' + x + ')');
+        
+        return eval(expression);
+    } catch (e) { return NaN; }
+}
+
+function drawGraph() {
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    ctx.clearRect(0, 0, width, height);
+
+    const xMin = parseFloat(document.getElementById('xMin').value) || -10;
+    const xMax = parseFloat(document.getElementById('xMax').value) || 10;
+    const yMin = parseFloat(document.getElementById('yMin').value) || -10;
+    const yMax = parseFloat(document.getElementById('yMax').value) || 10;
+
+    const xScale = width / (xMax - xMin);
+    const yScale = height / (yMax - yMin);
+    const originX = -xMin * xScale;
+    const originY = height - (-yMin * yScale);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(139, 148, 158, 0.1)';
+    ctx.lineWidth = 1;
+    const xStep = Math.pow(10, Math.floor(Math.log10(xMax - xMin)));
+    const yStep = Math.pow(10, Math.floor(Math.log10(yMax - yMin)));
+
+    for (let x = Math.ceil(xMin / xStep) * xStep; x <= xMax; x += xStep) {
+        const px = (x - xMin) * xScale;
+        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, height); ctx.stroke();
+        ctx.fillStyle = '#6e7681'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(x.toFixed(1), px, originY + 14);
+    }
+    for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax; y += yStep) {
+        const py = height - (y - yMin) * yScale;
+        ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(width, py); ctx.stroke();
+        if (Math.abs(y) > 0.001) {
+            ctx.fillStyle = '#6e7681'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+            ctx.fillText(y.toFixed(1), originX - 6, py + 3);
+        }
+    }
+
+    // Axes
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(width, originY); ctx.stroke();
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText('0', originX - 4, originY + 14);
+
+    // Functions
+    functions.forEach(func => {
+        ctx.strokeStyle = func.color; ctx.lineWidth = 2.5; ctx.beginPath();
+        let firstPoint = true;
+        for (let px = 0; px < width; px += 1) {
+            const x = xMin + px / xScale;
+            const y = evaluateFunction(func.expression, x);
+            if (isNaN(y) || !isFinite(y)) { firstPoint = true; continue; }
+            const py = height - (y - yMin) * yScale;
+            if (py < -1000 || py > height + 1000) { firstPoint = true; continue; }
+            if (firstPoint) { ctx.moveTo(px, py); firstPoint = false; }
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    });
+}
+
+function updateTable() {
+    const tbody = document.getElementById('tableBody');
+    if (functions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 20px; color: #6e7681;">No functions</td></tr>';
+        return;
+    }
+    const xMin = parseFloat(document.getElementById('xMin').value) || -10;
+    const xMax = parseFloat(document.getElementById('xMax').value) || 10;
+    const step = (xMax - xMin) / 20;
+    let html = '';
+    for (let x = xMin; x <= xMax; x += step) {
+        const fx = evaluateFunction(functions[0].expression, x);
+        html += '<tr><td>' + x.toFixed(2) + '</td><td>' + (isFinite(fx) ? fx.toFixed(4) : 'undefined') + '</td></tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function updateStats() {
+    const statsContent = document.getElementById('statsContent');
+    if (functions.length === 0) { statsContent.innerHTML = '<div style="color: #6e7681;">No functions</div>'; return; }
+    const func = functions[0];
+    const xMin = parseFloat(document.getElementById('xMin').value) || -10;
+    const xMax = parseFloat(document.getElementById('xMax').value) || 10;
+    let minY = Infinity, maxY = -Infinity, roots = [];
+    const step = (xMax - xMin) / 1000;
+    let prevY = evaluateFunction(func.expression, xMin);
+    for (let x = xMin + step; x <= xMax; x += step) {
+        const y = evaluateFunction(func.expression, x);
+        if (isFinite(y)) {
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (prevY * y < 0) roots.push(x.toFixed(3));
+        }
+        prevY = y;
+    }
+    statsContent.innerHTML =
+        '<div class="stat-item"><span>Function:</span><span>' + func.expression + '</span></div>' +
+        '<div class="stat-item"><span>Domain:</span><span>[' + xMin + ', ' + xMax + ']</span></div>' +
+        '<div class="stat-item"><span>Range:</span><span>[' + minY.toFixed(3) + ', ' + maxY.toFixed(3) + ']</span></div>' +
+        '<div class="stat-item"><span>Roots:</span><span>' + (roots.length > 0 ? roots.slice(0, 5).join(', ') : 'None') + '</span></div>' +
+        '<div class="stat-item"><span>Min:</span><span>' + minY.toFixed(4) + '</span></div>' +
+        '<div class="stat-item"><span>Max:</span><span>' + maxY.toFixed(4) + '</span></div>';
+}
+
+// ==================== KEYBOARD ====================
+document.addEventListener('keydown', (e) => {
+    if (currentMode === 'scientific') {
+        if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
+        else if (e.key === '.') appendNumber('.');
+        else if (e.key === '+') appendOperator('+');
+        else if (e.key === '-') appendOperator('-');
+        else if (e.key === '*') appendOperator('*');
+        else if (e.key === '/') appendOperator('/');
+        else if (e.key === '(') appendOperator('(');
+        else if (e.key === ')') appendOperator(')');
+        else if (e.key === '^') { current += '^'; lastWasOperator = true; justCalculated = false; updateDisplay(); }
+        else if (e.key === 'Enter' || e.key === '=') calculate();
+        else if (e.key === 'Escape') clearAll();
+        else if (e.key === 'Backspace') deleteLast();
+    } else {
+        if (e.key >= '0' && e.key <= '9') insertGraphNumber(e.key);
+        else if (e.key === '.') insertGraphNumber('.');
+        else if (e.key === '+') insertGraphOperator('+');
+        else if (e.key === '-') insertGraphOperator('-');
+        else if (e.key === '*') insertGraphOperator('*');
+        else if (e.key === '/') insertGraphOperator('/');
+        else if (e.key === '(') insertGraphOperator('(');
+        else if (e.key === ')') insertGraphOperator(')');
+        else if (e.key === '^') insertGraphOperator('^');
+        else if (e.key === 'Enter') plotEquation();
+        else if (e.key === 'Escape') clearGraphInput();
+        else if (e.key === 'Backspace') deleteGraphLast();
+    }
+});
+</script>
+</body>
+</html>
